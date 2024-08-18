@@ -24,7 +24,7 @@
 
 - allowPublicKeyRetrieval true로 바꿔줘야함
 
-#### Database
+## Database
 
 > database create
 >
@@ -49,3 +49,6 @@
 > > ex) 직접적으로 나타내는 column으로 id를 사용해서 혹은 다른 명칭으로 지정해서 해당 row에 임의 번호를 넣어서 작업을 할 수 있음
 
 - 각 상황마다 잘 사용하면 됨 장단점이 있어서 그럼
+  <br>
+
+### Not Null
