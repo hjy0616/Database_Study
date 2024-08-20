@@ -78,6 +78,7 @@ SELECT <값을 넣어도됨> FROM copang_main.member;
 #### 조회시 조건걸기
 
 - **where**은 특정 조건을 만족하는 row들만 "조회"할때 사용한다고 한다. 하단의 코드는 저 문자열이 들어간 email만 조회한 것이다.
+- "="는 같음을 의미 "!=", "<>"은 다름을 의미
 
 ```sql
 SELECT <값> FROM member WHERE email = 'taehos@hanmail.net';
@@ -102,10 +103,23 @@ SELECT * FROM member WHERE sign_up_day BETWEEN '2018-01-01' AND '2018-12-31';
 
 #### 문자열 패턴매칭
 
-```sql
+- like = ~처럼 이라는 뜻, %는 임의 의 문자열이 들어간것
+- *를 통해서 한칸을 의미함 c*라면 c의 뒷자리 1칸 이라는뜻
 
+```sql
+SELECT * FROM member WHERE address LIKE '서울%';
+SELECT * FROM member WHERE email LIKE 'c_____@%';
 ```
 
-```sql
+- 이 중에 있는~ (in) 여러 값들 중에서 해당하는 값이 있는 row들만 추려야할 때 사용됨
+- 나이 row 에서 20과 30 이란뜻
 
+```sql
+SELECT * FROM member WHERE age IN (20, 30);
 ```
+
+## SQL을 배워도 잘 못하는 이유
+
+- SQL에서 제공하는 함수를 잘 사용하지 못하기 때문임
+
+### DATE 타입 값을 다루는 함수
