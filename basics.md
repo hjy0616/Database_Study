@@ -91,6 +91,7 @@ SELECT * FROM member WHERE age >= 27;
 SELECT * FROM member WHERE sign_up_day > '2019-01-01';
 ```
 
+- Between은 **특정 구간을 조건으로 걸고 싶을 때** 사용함
 - Between and는 A부터 B까지를 말한것 밑의 코드를 예로 나이가 30살 부터 39살까지의 데이터를 조회한것
 - NOT을 추가하면 반대의 의미로써 밑의 코드를 예로 30대 나이는 조회하지말아라 라는 뜻을가짐
 - Date타입도 조회가 가능하다.
@@ -118,8 +119,230 @@ SELECT * FROM member WHERE email LIKE 'c_____@%';
 SELECT * FROM member WHERE age IN (20, 30);
 ```
 
+#### 문자열 패턴매칭 주의 사항
+
+1. 이스케이팅(escaping) 문제
+   \를 통해서 %같은 SQL에 등록된 문자를 이스케이핑을 시켜 일반 문자열로 볼 수 있게 수정해줘야합니다. 그래야 상관없이 가능합니다.
+
 ## SQL을 배워도 잘 못하는 이유
 
 - SQL에서 제공하는 함수를 잘 사용하지 못하기 때문임
 
 ### DATE 타입 값을 다루는 함수
+
+#### 연도,월,일 추출하기
+
+> YEAR() 함수를 사용하면 하단처럼 날짜에서 년도만 추출이 가능함
+
+```sql
+SELECT * FROM member WHERE YEAR(birthday) = '1992';
+```
+
+> MONTH()를 사용하면 날짜의 월값만 뽑는게 가능함
+
+```sql
+SELECT * FROM member WHERE MONTH(sign_up_day) IN (6,7,8);
+```
+
+> DAYOFMONTH() 함수는 날짜값에서 일만 뽑아낼 수 있
+
+```sql
+SELECT * FROM member WHERE DAYOFMONTH(sign_up_day) BETWEEN 15 AND 31;
+```
+
+#### 날짜간의 차이 구하기
+
+> DATEDIFF() 함수를 사용하면 됨
+
+```sql
+SELECT email, sign_up_day, DATEDIFF(sign_up_day, '2019-01-01') FROM member;
+```
+
+> 오늘 기준으로 확인하는 함수 CURDATE()
+
+```sql
+SELECT email, sign_up_day, CURDATE(), DATEDIFF(sign_up_day, CURDATE()) FROM member;
+```
+
+> 몇살일때 가입했는지도 알 수 있음
+
+- 가입한 날짜 그리고 저장되어 있던 생일을 365로 나눈값임
+
+```sql
+SELECT email, sign_up_day, DATEDIFF(sign_up_day, birthday) / 365 FROM member;
+```
+
+#### 날짜 더하기 빼기
+
+- 더하기 DATE_ADD(), 빼기 DATE_SUB()
+  ex) 가입일 기준 300일 이후의 날짜들을 구할때
+
+```sql
+SELECt email, sign_up_day, DATE_ADD(sign_up_day, INTERVAL 300 DAY) FROM member;
+```
+
+ex) 가입일(sign_up_day) 기준 250일 이전의 날짜를 구하고 싶으면 이렇게 쓰면 됩니다.
+
+```sql
+SELECt email, sign_up_day, DATE_SUB(sign_up_day, INTERVAL 250 DAY) FROM member;
+```
+
+**Sql문에서 AND가 OR보다 우선순위가 높다는것을 꼭 알고있어야함**
+
+## 데이터 정렬해서 보기
+
+- ORDER(순서) BY(~에 의해)라는 뜻으로 뒤에 정렬 기준을 적어주면됨
+
+```sql
+SELECT * FROM member
+ORDER BY height;
+```
+
+- 기본적으로 오름차순으로 데이터가 출력이 되는데,
+  - **ASC(ascending)** 때문임, 오름차순이라는 의미
+  - **DESC(descending)**은 반대로, 내림차순이라는 의미
+
+### 정렬시 주의사항
+
+- int와 Text의 기준으로 정렬할때 주의사항이 있음
+
+- **INT 타입의 값은 숫자의 대소(크고 작음)를 기준으로 정렬이 수행되지만, TEXT 타입의 값은 숫자의 대소가 아니라 한 문자, 한 문자씩 그 문자 순서를 비교해서 정렬이 수행**
+
+- 문자열 타입으로 저장돼있지만, 정렬 기준으로 쓸 때는 숫자형으로 사용하고 싶다면 **CAST()** 함수를 사용하면 됨
+
+```sql
+SELECT * FROM ordering_test ORDER BY CAST(data AS signed) DESC;
+```
+
+- 저장된 숫자값에 소수점이 포함되어 있다면 **signed 대신 decimal**을 사용하면됨
+
+## 데이터 일부만 추려서 보기
+
+- limit을 통해서 10개만 추려서 볼 수 있음
+
+```sql
+SELECT * FROM member
+ORDER BY sign_up_day DESC
+LIMIT 10;
+```
+
+- 하단 처럼 사용하면 2개의 정보만 볼 수 있음
+
+```sql
+SELECT * FROM member
+ORDER BY sign_up_day DESC
+LIMIT 8, 2;
+```
+
+- LIMIT (row의 개수), LIMIT (첫 번째 row를 기준으로 한 시작 Offset, row의 개수)
+
+- 하단 처럼 ,은 AND 대신 사용할 수 있음 근데 웃긴게 AND쓰면 에러가남 잘 생각해야함 "하단의 뜻은 review 테이블에 star은 오름차순으로 star가 같은경우 registration_date는 내림차순으로 5개만 보여주세요 라는뜻"
+
+```sql
+SELECT * FROM review
+ORDER BY star ASC , registration_date desc
+LIMIT 5;
+```
+
+<br/>
+
+**문자열 비교를 할 때 대소문자 구분을 확실하게 하고 싶다면 문자열 패턴 표현식 앞에 'BINARY'라고 써주면 됩**
+
+<br />
+
+## 데이터 특성 분석
+
+### 집계 함수(Aggregate Function)
+
+- 여러가지 특성이 있음
+
+- COUNT를 통해서 특정 row, column의 갯수를 구할 수 있음
+- NULL의 갯수는 제외하고 갯수를 측정하기 때문에 "\*"를 사용하면 NULL값이 있든 없든 전체 row 수를 확인하기 때문에 사용하면 좋음
+
+```sql
+SELECT COUNT(*) FROM member;
+```
+
+- 최댓값과 최솟값
+  - **MAX** 함수와 MIN을 사용해서 구할 수 있다.
+
+```sql
+SELECT MAX(height) FROM member;
+```
+
+- 평균을 구하는 함수 AVG(average)
+  - Null이 있는 값은 제외하고 평균을 구하기 때문에 걱정할 필요없음
+
+```sql
+SELECT AVG(weight) FROM member;
+```
+
+- **SUM** 함수는 해당 column의 합계를 구해준다고 함.
+
+```sql
+SELECT SUM(age) FROM member;
+```
+
+- **STD** 함수는 표준 편차를 구해준다고 합니다.
+
+```sql
+SELECT STD(age) FROM member;
+```
+
+### 산술 함수(Mathematical Function)
+
+- 산술 연산을 해주는 함수들
+
+- **ABS** 함수는 절대값을 구하는 함수
+
+```sql
+SELECT ABS(height) FROM member;
+```
+
+- **SQRT** 함수는 제곱근을 구하는 함수
+
+```sql
+SELECT SQRT(height) FROM member;
+```
+
+- **CEIL** 함수는 올림 함수
+
+```sql
+SELECT CEIL(height) FROM member;
+```
+
+- **FLOOR** 함수는 내림 함수
+
+```sql
+SELECT FLOOR(height) FROM member;
+```
+
+- **ROUND** 함수는 반올림 함수
+
+```sql
+SELECT ROUND(height) FROM member;
+```
+
+#### 집계 함수와 산술 함수의 차이점!!!!
+
+1. 집계 함수는 특정 column의 **여러 row의 값들을 동시에 고려**해서 실행되는 함수라고 함.
+2. 산술 함수는 특정 column의 **각 row의 값마다 실행되는 함수**라고함.
+
+#### NULL 값 다루기
+
+- IS는 ~가 있는지를 묻는 조건, 하단의 코드는 NULL이 있는지 묻는 것
+- 실제 NULL이 아닌 있는 데이터를 가져오는 방법은 **NOT**을 추가하면 됨
+
+```sql
+SELECT * FROM member WHERE address IS NULL;
+SELECT * FROM member WHERE address IS NOT NULL;
+```
+
+- NULL값 대신 다른 값들을 넣어줄 때 사용하는 함수로
+- "**COALESCE**"를 사용한다.
+  - 첫번째 인자값은 column이 들어가는데, 값이 있다면 column의 일반 값을 **출력**해주고,
+  - 값이 없다면 2번째 인자값인 문자열을 **출력**해준다.
+
+```sql
+SELECT COALESCE(height, '###'), COALESCE(weight, '___'), COALESCE(address, '@@@') FROM member;
+```
