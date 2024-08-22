@@ -346,3 +346,74 @@ SELECT * FROM member WHERE address IS NOT NULL;
 ```sql
 SELECT COALESCE(height, '###'), COALESCE(weight, '___'), COALESCE(address, '@@@') FROM member;
 ```
+
+#### \* IS NULL과 = NULL은 다르다.
+
+- NULL 값은 어떤 값도 아니기 때문에 =를 사용해서 어떤 값들과 비교할 수 있는 대상이 아님
+- 그래서 아무 row에 출력되지 않음
+
+- **NULL에는 어떤 연산을 해도 결국 NULL이다.**
+
+#### 이상한 값을 제외하고 싶을때
+
+- 나이 평균을 구하는 코드,
+- 5~100세까지의 데이터를 추려서 통계를 구하는 방법임
+
+```sql
+SELECT AVG(age) FROM copang_main.member WHERE age BETWEEN 5 AND 100;
+```
+
+- 주소 통계,
+- 데이터를 거를때 데이터를 확인하고 처리하면됨
+- 하단의 코드는 ~호로 끝나는 주소만 정상이고 나머지는 비정상 주소
+
+```sql
+SELECT * FROM copang_main.member WHERE address NOT LIKE '%호';
+```
+
+#### column끼리 계산 방법
+
+- 하단은 BMI 계산하는 방법임
+- NULL 값이 들어가면 무조건 값이 NULL로 나옴
+
+```sql
+SELECT email, height, weight, weight / ((height/100) * (height/100)) FROM copang_main.member;
+```
+
+- 이름이 너무 길어서 복잡할땐 별명을 넣을 수 있음
+- 넣는 방법은 하단 코드의 AS를 넣어서 사용하면 됨
+- alias라고 부르는데 리눅스 사용하면 다들 아시는 그 alias라고 보면 됨 별명이라는 뜻
+- AS 없이 한칸띄워도 가능함
+
+```sql
+SELECT email, height AS 키, weight AS 몸무게, weight / ((height/100) * (height/100)) AS BMI FROM copang_main.member;
+```
+
+- CONCAT 함수를 사용해서도 별명을 넣는게 가능함
+
+```sql
+SELECT email, CONCAT(height, "cm", ", ", weight, 'kg') AS '키와 몸무게', weight / ((height/100) * (height/100)) AS BMI FROM copang_main.member;
+```
+
+#### 컬럼의 값 변환해서 보는 방법
+
+- ex) 위의 BMI를 재는 과정에서 비만인지 아닌지 판별이 가능한 결과 값이 필요한데,
+- 그 값을 보는 방법을 알려준다는 것
+
+- CASE는 "사건/경우" 라는뜻
+- WHEN의 줄이 하나의 "조건"라고 보면됨
+- THEN은 "반환 값"이라고 보면됨
+
+```sql
+SELECT
+	email, CONCAT(height, "cm", ", ", weight, 'kg') AS '키와 몸무게', weight / ((height/100) * (height/100)) AS BMI,
+	CASE
+		WHEN weight IS NULL OR height IS NULL THEN '비만 여부 알 수 없음'
+		WHEN weight / ((height/100) * (height/100)) >= 25 THEN '과체중 또는 비만'
+		WHEN weight / ((height/100) * (height/100)) >= 18.5
+			AND weight / ((height/100) * (height/100)) < 25
+			THEN '정상'
+		ELSE '저체중'
+	END AS obesity_check
+FROM copang_main.member ORDER BY obesity_check ASC ;
+```
