@@ -63,7 +63,7 @@
   - primaryKey 중 Surrogate Key는 id를 사용할때 보통 AI를 사용해서 id값을 임의적으로 넣지않고 자동증가를 시켜서 사용한다고 한다.
     - 혹시 테이블에서 Auto Increment, AI 이런 표시를 보게 된다면 이번 노트에서 배운대로 그것이 Surrogate Key이고 MySQL에 의해 자동으로 관리되고 있는 컬럼이구나라고 생각하시면 됩니다.
 
-## CRUD
+## R 조회
 
 ### 조회
 
@@ -416,4 +416,196 @@ SELECT
 		ELSE '저체중'
 	END AS obesity_check
 FROM copang_main.member ORDER BY obesity_check ASC ;
+```
+
+#### 고유값만 보는 방법
+
+- DISTINCT() 함수를 사용하면 고유한 값만 가져온다고 한다.
+- 하단의 코드를 예시로 gender의 고유값 즉 남자와 여자에 대한 데이터만 가져오는 것이다.
+
+```sql
+SELECT DISTINCT(gender) FROM member;
+```
+
+- address를 예시로 들면 모든 row의 값이 고유한 값이기 때문에
+- SUBSTRING 함수로 몇자리까지를 나타내는걸로 수정 후 고유값을 가져오는게 맞다.
+
+```sql
+SELECT DISTINCT(SUBSTRING(address, 1, 2)) FROM member;
+```
+
+#### 문자열 처리 함수들
+
+1. LENGTH()
+
+- 문자열의 길이를 구해줌
+
+```sql
+SELECT address, LENGTH(address) FROM member;
+```
+
+2. UPPER(), LOWER() 함수
+
+- UPPER 함수는 대문자로 바꿔주는 함수, LOWER 함수는 소문자로 바꿔주는 함수
+
+```sql
+SELECT email, UPPER(email) FROM member;
+```
+
+```sql
+SELECT email, LOWER(email) FROM member;
+```
+
+3. LPAD(), RPAD() 함수
+
+- 오른쪽 혹은 왼쪽을 특정 문자열로 채워주는 기능이라고 함
+
+4. TRIM(), LTRIM(), RTRIM() 함수
+
+- 유용하게 쓰일 것 같음
+- 왼쪽 오른쪽의 빈칸을 삭제해주는 기능임
+
+```sql
+SELECT TRIM(world) FROM test;
+```
+
+## GROUPING(그룹으로 여러개 나눈다는 이야기)
+
+- 하단의 코드를 보면 DISTINCT과 비슷하지만 전체적으로 보면 다름
+- gender의 기준으로 모든 row들이 원래는 보여주기 때문임
+
+```sql
+SELECT gender FROM member GROUP BY gender;
+```
+
+- GROUP BY를 함께 진행되면 좀 더 다양한 방식으로 분석이 가능함.
+
+- **Address**같이 고유값이 있는 column은 SUBSTRING 함수로 조절이 필요함
+
+```sql
+SELECT SUBSTRING(address, 1, 2) as region, COUNT(*) FROM member GROUP BY SUBSTRING(address, 1, 2);
+```
+
+- 여러 column으로 그룹을 나눌 수 있음 하단 처럼
+
+```sql
+SELECT SUBSTRING(address, 1, 2) as region, gender, COUNT(*) FROM member GROUP BY SUBSTRING(address, 1, 2), gender;
+```
+
+- HAVING 함수를 사용하면 한 그룹의 **특정**그룹만 또 볼 수있게해줌
+- 하단의 코드는 서울과 남자인 사람만 보여주는 코드라고 보면됨
+
+```sql
+SELECT SUBSTRING(address, 1, 2) as region, gender, COUNT(*) FROM member GROUP BY SUBSTRING(address, 1, 2), gender HAVING region = '서울' AND gender = "m";
+```
+
+- NULL 값 삭제 로직
+
+```sql
+SELECT SUBSTRING(address, 1, 2) as region, gender, COUNT(*) FROM member GROUP BY SUBSTRING(address, 1, 2), gender HAVING region IS NOT NULL;
+```
+
+- NULL 값을 지우고 출력하고, region이 오름차순으로 gender가 내림차순으로 보여주기
+
+```sql
+SELECT SUBSTRING(address, 1, 2) as region, gender, COUNT(*) FROM member GROUP BY SUBSTRING(address, 1, 2), gender HAVING region IS NOT NULL ORDER BY region ASC, gender DESC;
+```
+
+#### 규칙
+
+- GROUP BY를 사용할 때는, SELECT 절에는
+
+  1. GROUP BY 뒤에서 사용한 컬럼들 또는
+  2. COUNT(), MAX() 등과 같은 집계 함수만
+     쓸 수 있다는 규칙이 있음.
+
+- 단순히 조회용으로 GROUP BY에 없는 column을 SELECT문 뒤에 사용하는건 안됨 ex) SELECT age
+- 근데 집계함수 같은 MAX 혹은 COUNT같은 기능은 추가 가능함 ex) SELECT MAX(age)
+
+#### 부분 총계 WITH ROLLUP
+
+- 부분을 중간중간에 합쳐서 데이터를 알려줌
+
+```sql
+SELECT SUBSTRING(address, 1, 2) as region, gender, COUNT(*) FROM member GROUP BY SUBSTRING(address, 1, 2), gender WITH ROLLUP HAVING region IS NOT NULL ORDER BY region ASC, gender DESC;
+```
+
+- GROUP BY의 기준의 순서로 WITH ROLLUP의 총계를 알려줌 ex) GROUP BY age, year, gender라면 1. age 2. year 3.gender 마지막 집계 총합 이런식으로 알려준다는 이야기
+
+- 실제로 NULL인지 부분총계를 위해서 나타낸건지 구별하기 힘들때는 GROUPING()함수를 사용하면 된다.
+- 0은 부분총계를 위한 NULL 1은 실제 NULL이라는 뜻이다.
+- 하단처럼 사용된다.
+
+```sql
+SELECT SUBSTRING(address, 1, 2) as region, gender, COUNT(*) FROM member GROUP BY GROUPING(SUBSTRING(address, 1, 2)), GROUPING(gender) WITH ROLLUP HAVING region IS NOT NULL ORDER BY region ASC, gender DESC;
+```
+
+#### SQL의 흐름
+
+1. FROM: 어느 테이블을 대상으로 할 것인지를 먼저 결정합니다.
+2. WHERE: 해당 테이블에서 특정 조건(들)을 만족하는 row들만 선별합니다.
+3. GROUP BY: row들을 그루핑 기준대로 그루핑합니다. 하나의 그룹은 하나의 row로 표현됩니다.
+4. HAVING: 그루핑 작업 후 생성된 여러 그룹들 중에서, 특정 조건(들)을 만족하는 그룹들만 선별합니다.
+5. SELECT: 모든 컬럼 또는 특정 컬럼들을 조회합니다. SELECT 절에서 컬럼 이름에 alias를 붙인 게 있다면, 이 이후 단계(ORDER BY, LIMIT)부터는 해당 alias를 사용할 수 있습니다.
+6. ORDER BY: 각 row를 특정 기준에 따라서 정렬합니다.
+7. LIMIT: 이전 단계까지 조회된 row들 중 일부 row들만을 추립니다.
+
+## JOIN
+
+- **외래 키**를 **Foreign Key**라고 부른다.
+- 위 설명으로는 **다른 테이블의 특정 row를 식별할 수 있게 해주는 컬럼**이라고 생각하면 된다.
+  - ex) 참조를 하는 테이블인 stock 테이블을 '자식 테이블'
+  - ex) 참조를 "당하는" 테이블인 item 테이블을 '부모 테이블'
+- **Foreign Key**는 다른 테이블의 특정 row를 식별할 수 있어야 하기 때문에 주로 다른 테이블의 **Primary Key**를 참조할 때가 많다.
+
+- join은 연결하다 합치다를 의미
+- LEFT OUTER JOIN을 사용하면 item의 데이터와 stock의 데이터를 합쳐서 출력해줌
+- RIGHT OUTER JOIN을 사용하면 오른쪽에 있는 stock 테이블의 기준으로 합쳐줌
+
+```sql
+SELECT
+	item.id,
+	item.name,
+	stock.item_id,
+	stock.inventory_count
+FROM item LEFT OUTER JOIN stock
+ON item.id = stock.item_id;
+```
+
+- NULL로 되어있는 데이터는 item의 데이터가 있지만 stock 테이블에는 없는 데이터를 NULL로 표현함
+
+- join 할때 alias를 사용을 하는 방법은 하단의 코드와 같고
+- 꼭 알아야하는건 as로 별명을 지어놨으면 sql의 모든 부분을 수정해줘야한다는 것
+
+```sql
+USE copang_main;
+SELECT
+	i.id,
+	i.name,
+	s.item_id,
+	s.inventory_count
+FROM item AS i LEFT OUTER JOIN stock AS s
+ON i.id = s.item_id;
+```
+
+#### alias의 차이점
+
+- Column의 alias는 조회 결과에서 컬럼 이름을 변경해주는것
+- JOIN시 alias는 SQL 문의 전체 길이를 줄여서 가독성을 높이기 위해 사용됨
+
+#### inner Join
+
+- 각 테이블에서 조인 기준으로 기준 column에 같은 값인 것만 연결됨
+- 수학으로 치면 교집합이라고 보면됨
+- Right OUTER Join하고 결과가 같을 수 있다고함
+
+```sql
+USE copang_main;
+SELECT
+	i.id,
+	i.name,
+	s.item_id,
+	s.inventory_count
+FROM item AS i INNER JOIN stock AS s
+ON i.id = s.item_id;
 ```
