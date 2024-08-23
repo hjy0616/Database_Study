@@ -609,3 +609,333 @@ SELECT
 FROM item AS i INNER JOIN stock AS s
 ON i.id = s.item_id;
 ```
+
+#### ON 대신에 USING도 사용 가능합니다!
+
+- 하단의 방식대로 사용이 가능함
+
+```sql
+USE copang_main;
+SELECT
+	i.id,
+	i.name,
+	s.item_id,
+	s.inventory_count
+FROM item AS i INNER JOIN stock AS s
+ON USING(id);
+```
+
+#### 합치는(join) 연산
+
+- 테이블을 합치는 연산은 2가지로 나누는데 **결합 연산**과 **집합 연산**으로 나뉨
+
+1. 결합 연산은 테이블을 가로 방향으로 합치는 것에 관한 연산
+2. 집합 연산은 테이블을 세로 방향으로 합치는 것에 관한 연산
+
+위에 까지 배운 연사들이 결합 연산에 해당된다고 함.
+
+- 그렇다면 집합 연산이란?
+  - c 를 A와 B의 교집합 : A ∩ B
+  - a 를 A의 차집합 : A - B
+  - b 를 B의 차집합 : B - A
+  - (a+b+c) 를 A와 B의 합집합 : A U B
+
+1. A ∩ B (INTERSECT 연산자 사용)
+
+```sql
+SELECT * FROM member_A
+INTERSECT
+SELECT * FROM member_B
+```
+
+2. A - B (MINUS 연산자 또는 EXCEPT 연산자 사용)
+
+```sql
+SELECT * FROM member_A
+MINUS
+SELECT * FROM member_B
+```
+
+3. B - A (MINUS 연산자 또는 EXCEPT 연산자 사용)
+
+```sql
+SELECT * FROM member_B
+MINUS
+SELECT * FROM member_A
+```
+
+4. A U B (UNION 연산자 사용)
+
+```sql
+SELECT * FROM member_A
+UNION
+SELECT * FROM member_B
+```
+
+### 활용
+
+왼쪽 테이블을 확인하고싶을때 LEFT OUTER JOIN
+오른쪽 테이블을 확인하고싶을때 RIGHT OUTER JOIN
+둘다 공통으로 갖고있는걸 확인하기 위해서는 INNER JOIN
+전체 합쳐서 전체 상품을 보기위해서 사용하는 UNION
+
+- UNION 함수 사용 시 다른 종류의 테이블도 조회하는 column을 일치시키면 집합 연산이 가능함
+- 하단의 코드 방식대로 가능함.
+
+```sql
+SELECT id, nation, count FROM Summer_Olympic_Medal
+UNION
+SELECT id, nation, count FROM Winter_Olympic_Medal
+```
+
+#### UNION과 UNION ALL
+
+- UNION은 "교집합에 해당하는 영역의 row들은 중복을 제거하고, 그냥 딱 하나의 row만 보여"준다는 것
+- UNION ALL은 두 테이블의 교집합에 해당하는 영역의 row들은 중복을 제거하고, 그냥 딱 하나의 row만 보여준다
+
+- UNION 연산과 UNION ALL 연산은 둘다 합집합을 구하되, 전자는 중복을 제거해서 보여주고, 후자는 그런 작업없이 두 테이블을 합친 결과를 그대로 보여준다는 차이가 있다.
+- 깔끔하게 보이는 것이 중요하면 UNION 중복을 제거하면 안된다면 UNION ALL을 사용하면 된다.
+
+#### 3개의 테이블 JOIN하기
+
+- 3개 조인 가능
+
+### 별점 평균 높은것 찾기 (성별 포함)
+
+```sql
+SELECT
+	i.name,
+	i.id,
+	r.item_id,
+	r.star,
+	r.comment,
+	r.mem_id,
+	m.id,
+	m.email
+FROM
+	item AS i LEFT OUTER JOIN review AS r
+		ON r.item_id = i.id LEFT OUTER JOIN member AS m
+		ON r.mem_id = m.id;
+```
+
+- 여성의 column만 출여서 출력하기
+
+```sql
+SELECT
+ *
+FROM
+	item AS i LEFT OUTER JOIN review AS r
+		ON r.item_id = i.id LEFT OUTER JOIN member AS m
+		ON r.mem_id = m.id
+    WHERE m.gender= 'f';
+```
+
+- 별점만 조회하는데 내림차순으로 확인하기
+
+```sql
+SELECT
+ i.id, i.name, AVG(star)
+FROM
+	item AS i LEFT OUTER JOIN review AS r
+		ON r.item_id = i.id LEFT OUTER JOIN member AS m
+		ON r.mem_id = m.id
+WHERE m.gender= 'f'
+GROUP BY i.id, i.name
+ORDER BY AVG(star) DESC;
+```
+
+- 리뷰의 갯수도 확인하기
+- 리뷰 수가 2개 이상인 것만 보여달라 HAVING을 통해서 조회 가능.
+
+```sql
+SELECT
+ i.id, i.name, AVG(star),COUNT(*)
+FROM
+	item AS i LEFT OUTER JOIN review AS r
+		ON r.item_id = i.id LEFT OUTER JOIN member AS m
+		ON r.mem_id = m.id
+WHERE m.gender= 'f'
+GROUP BY i.id, i.name
+HAVING COUNT(*) > 1
+ORDER BY AVG(star) DESC;
+```
+
+## JOIN 정리 및 추가
+
+- 결합 연산 중에서는
+
+  - LEFT OUTER JOIN
+  - RIGHT OUTER JOIN
+  - INNER JOIN
+
+- 집합 연산 중에서는
+  - INTERSECT
+  - MINUS
+  - UNION
+  - UNION ALL
+
+### 잘 사용하지 않지만 알아두면 좋은 함수
+
+1. NATURAL JOIN
+
+- 두 테이블에서 같은 이름의 컬럼을 찾아서 **자동으로 그것들을 조인 조건**을 설정하고, INNER JOIN을 해주는 조인입니다. 우리말로는 자연 조인이라고 함
+
+```sql
+SELECT p.id, p.player_name, p.team_name, t.team_name, t.region FROM player AS NATURAL JOIN team AS t;
+```
+
+2. CROSS JOIN
+
+- 한 테이블의 하나의 row에 다른 테이블의 모든 row들을 매칭하고, 그 다음 row에서도 또, 다른 테이블의 모든 row들을 매칭하는 것을 반복함으로써 두 테이블의 row들의 모든 조합을 보여주는 조인
+
+```sql
+SELECT * FROM member CROSS JOIN stock;
+```
+
+3. SELF JOIN
+
+- 서로 별개인 두 테이블을 조인하는 것처럼 생각하면 됨
+- 하나의 테이블 안에서 다양한 정보들을 추출이 가능
+
+```sql
+SELECT * FROM member AS m1 LEFT OUTER JOIN member AS m2
+ON m1.age = m2.age;
+```
+
+4. FULL OUTER JOIN
+
+- 두 테이블의 LEFT OUTER JOIN 결과와 RIGHT OUTER JOIN 결과를 합치는 조인
+- 두 결과에 모두 존재하는 row들(두 테이블에 공통으로 존재하던 row들)은 한번만 표현함
+
+5. Non-Equi JOIN
+
+- **"Equi"**는 Equality Condition의 줄임말로 동등 조건을 의미
+- 동등 조건이 아닌 다른 종류의 조건을 사용해서 조인을 할 수도 있다.
+
+```sql
+SELECT m.email, m.sign_up_day, i.name, i.registration_date FROM copang_main.member AS m LEFT OUTER JOIN copang_main.item AS i ON m.sign_up_day < i.registration_date ORDER BY m.sign_up_day ASC;
+```
+
+<br />
+
+## SUBQUERY(서브쿼리)란?
+
+- SQL문 안에 '부품' 처럼 들어가는 SELECT 문
+- 전체 sql문 안에 쿼리를 넣는게 서브쿼리임 꼭 ()로 서브쿼리임을 나타내야함
+
+```sql
+SELECT i.id, i.name, AVG(star) AS avg_star
+FROM item AS i LEFT OUTER JOIN review AS r
+ON r.item_id = i.id
+GROUP BY i.id, i.name
+HAVING avg_star < (SELECT AVG(star) FROM review) // 이처럼 sql을 넣어도 됨 이걸 서브쿼리라고함
+ORDER BY avg_star DESC;
+```
+
+### SELECT 절에 서브쿼리 사용법
+
+- 원래의 테이블에 없던 새로운 테이블에 추가해서 본다는 의미로 보면됨
+
+```sql
+SELECT
+  id,
+  name,
+  price,
+  (SELECT MAX(price) FROM item) AS max_price
+FROM copang_main.item;
+```
+
+### WHERE 절에 서브쿼리 사용법
+
+```sql
+SELECT
+  id,
+  name,
+  price,
+  (SELECT MAX(price) FROM item) AS max_price
+FROM copang_main.item
+WHERE price > (SELECT AVG(price) FROM item);
+```
+
+- Q ? 상품 중에서 리뷰가 최소 3개 이상 달린 상품들의 정보만 보고 싶으면 어떻게 해야할까?
+- 조인을 사용할 수 있지만 서브 쿼리를 통해서도 해결이 가능하다.
+
+```sql
+SELECT * FROM item WHERE id IN (
+  SELECT item_id
+  FROM review
+  GROUP BY item_id HAVING COUNT(*) >= 3
+);
+```
+
+#### ANY와 ALL도 서브쿼리랑 함께 유용하게 쓰임
+
+- ANY는 우리말로 '~중 하나라도'라는 뜻을 가지는 영어 단어
+- SOME은 '어떤 하나의~' 라는 뜻을 가진 영어 단어
+- 위 두개의 특징 서브쿼리의 결과에 있는 각 row의 값들 중 하나라도 조건을 만족하면 TRUE를 리턴
+- ALL은 '모든~' 이라는 뜻
+- 모든 경우에 대해서 해당 조건이 성립해야 TRUE를 리턴
+
+```sql
+WHERE view_count > ANY(서브쿼리)
+WHERE view_count > SOME(서브쿼리)
+WHERE view_count > ALL(서브쿼리)
+```
+
+#### FROM 절에 있는 서브쿼리
+
+- derived table은 FROM 안의 서브쿼리를 나타냄 alias를 꼭 사용해야함
+
+```sql
+SELECT
+  AVG(review_count),
+  MAX(review_count),
+  MIN(review_count),
+FROM
+  (SELECT
+      SUBSTRING() AS region,
+      COUNT(*) AS review_count
+   FROM review AS r LEFT OUTER JOIN member AS m
+   ON r.mem_id = m.id
+   GROUP BY SUBSTRING(address, 1, 2)
+   HAVING region IS NOT NULL
+    AND region != '안드') AS review_count_summary;
+```
+
+#### 서브쿼리의 종류
+
+- 단일값을 리턴하는 서브쿼리
+- \*스칼라 : 하나의 수치만으로 완전히 표시되는 양으로 벡터 등과 같은 방향의 구별이 없는 수량이다. 예를 들면, 질량, 밀도 따위를 나타내는 수이다. 라고도 불린다.
+
+```sql
+SELECT MAX(age) FROM member;
+```
+
+- 하나의 column에 여러 row들이 있는 형태의 결과를 리턴하는 서브쿼리
+
+```sql
+SELECT SUBSTRING(address, 1, 2) FROM member;
+```
+
+- 하나의 테이블 형태의 결과(여러 column, 여러 row)를 리턴하는 서브쿼리
+- 서브쿼리로 일시적으로 탄생한 테이블을 derived table
+
+```sql
+SELECT * FROM member;
+```
+
+### 비상관 서브쿼리와 상관 서브쿼리
+
+- 서브쿼리가 outer query에 적힌 테이블 이름 등과 상관 관계를 갖고 있어서 그 단독으로는 실행되지 못하는 서브쿼리를 상관 서브쿼리라고 합니다.
+
+1. NOT EXISTS
+   한 테이블에서 어떤 특정 테이블에 연관된 row가 있는 것들만, 혹은 없는 것들만 추려낼 때는 상관 서브쿼리를 사용하고 그 앞에 EXISTS 또는 NOT EXISTS를 붙이면 됩니다.
+2. EXISTS
+
+## 뷰
+
+- 결과 테이블을 **뷰**라는 테이블에 저장이 가능하다.
+
+```sql
+CREATE VIEW three_tables_joined AS <기존 서브쿼리>
+```
