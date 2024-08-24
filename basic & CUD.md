@@ -320,3 +320,46 @@ CREATE TABLE copy_of_undergraduate AS SELECT * FROM undergraduate;
 ```sql
 DROP TABLE test;
 ```
+
+### 테이블 컬럼 구조만 복사하기
+
+- 테이블 A 같은(LIKE) 테이블 copy_A를 만들어라 라는 의미
+
+```sql
+CREATE TABLE copy_A LIKE A;
+```
+
+- row를 추가하고싶다면 하단의 코드처럼 하면됨
+
+```sql
+INSERT INTO copy_A SELECT * FROM A;
+```
+
+- 특정 row들만 추가하고 싶을때는 하단의 코드처럼 사용하면됨
+- WHERE절을 통해서 major라는 column의 101을 가지고 있는 row들만 가지고 온것
+- 결국 **서브쿼리**를 통해 테이블을 세세하게 분활이 가능하다는 의미
+
+```sql
+INSERT INTO copy_A
+    SELECT * FROM A WHERE major = 101;
+```
+
+#### TRUNCATE문
+
+- 기존의 테이블의 row들을 다 삭제하고 다시 시작하고 싶을때 TRUNCATE을 사용함
+
+```sql
+TRUNCATE [table명];
+```
+
+## database 설계사항, 스키마
+
+- 스키마를 짜는걸 **데이터베이스 모델링** 또는 **데이터베이스 디자인** 이라고 한다.
+- 종류가 2가지가 있다.
+  1. 개념적 스키마(Conceptual Schema)
+     - 하나의 조직, 하나의 기관, 하나의 서비스 등에서 필요로 하는 데이터베이스 설계사항을 의미하죠. 보통 스키마라고 하면 이 개념적 스키마를 의미
+  2. 물리적 스키마(Physical Schema)
+     - 데이터를 실제로 컴퓨터의 저장장치에 어떤 방식으로 저장할지를 결정하는 스키마
+     - 물리적 스키마는 저장 스키마(Storage Schema), 내부 스키마(Internal Schema)라고도 불림
+     - ex) member 라는 테이블이 있고 그 안에 id, name, age 등의 컬럼이 있을 때 각 컬럼의 값들을 어떤 방식으로 저장할지에 관한 설계사항
+- 결론 그냥 shema 짯냐고 생각하면됨
